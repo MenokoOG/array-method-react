@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import FruitList from './components/FruitList';
 import VegetableList from './components/VegetableList';
@@ -7,6 +7,7 @@ import ActionButton from './components/ActionButton';
 import MainContainer from './components/MainContainer';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import { FaSun, FaMoon } from 'react-icons/fa';
+import Draggable from 'react-draggable';
 import 'react-toastify/dist/ReactToastify.css';
 
 const GlobalStyle = createGlobalStyle`
@@ -44,13 +45,31 @@ const methodData = {
   },
 };
 
+const initialFruit = ["banana", "apple", "orange", "watermelon"];
+const initialVegetables = ["carrot", "tomato", "pepper", "lettuce"];
+const initialFood = [];
+
+const initialPosition = { x: 0, y: 0 };
+
 const App = () => {
-  const [fruit, setFruit] = useState(["banana", "apple", "orange", "watermelon"]);
-  const [vegetables, setVegetables] = useState(["carrot", "tomato", "pepper", "lettuce"]);
-  const [food, setFood] = useState([]);
+  const [fruit, setFruit] = useState(initialFruit);
+  const [vegetables, setVegetables] = useState(initialVegetables);
+  const [food, setFood] = useState(initialFood);
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalContent, setModalContent] = useState({});
   const [theme, setTheme] = useState({ mode: 'light' });
+  const [positions, setPositions] = useState({
+    fruit: initialPosition,
+    vegetables: initialPosition,
+  });
+
+  useEffect(() => {
+    if (theme.mode === 'dark') {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [theme]);
 
   const handleMethodClick = (method) => {
     let newFruit = [...fruit];
@@ -110,15 +129,27 @@ const App = () => {
     }));
   };
 
+  const resetState = () => {
+    setFruit(initialFruit);
+    setVegetables(initialVegetables);
+    setFood(initialFood);
+    setPositions({
+      fruit: initialPosition,
+      vegetables: initialPosition,
+    });
+    toast.info("State has been reset to initial values.");
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyle />
       <MainContainer>
-        <div className="flex justify-between w-full px-4">
+        <div className="flex flex-col items-center w-full px-4">
           <h1 className="text-4xl font-bold mb-4">Fruits & Vegetables Manipulation</h1>
-          <button onClick={toggleTheme} className="text-2xl">
+          <button onClick={toggleTheme} className="text-2xl mb-4" data-testid="theme-toggle">
             {theme.mode === 'dark' ? <FaSun /> : <FaMoon />}
           </button>
+          <button onClick={resetState} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">Reset</button>
         </div>
         <p className="mb-4 text-center text-lg">
           Select a method to see how it manipulates the arrays. The results will be displayed below.
@@ -126,8 +157,22 @@ const App = () => {
           Drag the cards for fun!
         </p>
         <div className="flex space-x-4 mb-4">
-          <FruitList fruits={fruit} />
-          <VegetableList vegetables={vegetables} />
+          <Draggable
+            position={positions.fruit}
+            onStop={(e, data) => setPositions({ ...positions, fruit: { x: data.x, y: data.y } })}
+          >
+            <div>
+              <FruitList fruits={fruit} />
+            </div>
+          </Draggable>
+          <Draggable
+            position={positions.vegetables}
+            onStop={(e, data) => setPositions({ ...positions, vegetables: { x: data.x, y: data.y } })}
+          >
+            <div>
+              <VegetableList vegetables={vegetables} />
+            </div>
+          </Draggable>
         </div>
         <div className="flex flex-wrap space-x-2 mb-4 justify-center">
           {['pop', 'shift', 'concat', 'reverse', 'splice'].map((method) => (
